@@ -54,6 +54,8 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75)
             .in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
+    private double FinesseSpeedMult = 0.5;
+    private double FinesseAngularRateMult = 0.5;
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -182,6 +184,7 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
         // for the drivetrain. The andThen(trackHub) part means that after applying the
         // drive request, the drivetrain will also execute the trackHub command, which
         // will use vision to track the hub and adjust the turret accordingly.
+
         drivetrain.setDefaultCommand(
                 // Drivetrain will execute this command periodically
                 drivetrain.applyRequest(
@@ -197,18 +200,48 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
                                                 * MaxAngularRate) // Drive counterclockwise with negative X (left)
                 ).andThen(trackBlueHub));
 
+        driverXbox.rightBumper().whileTrue(
+                        // Drivetrain will execute this command periodically
+                        drivetrain.applyRequest(
+                                () -> drive
+                                        .withVelocityX(
+                                                -MathUtil.applyDeadband(driverXbox.getLeftY(), 0.05)
+                                                        * MaxSpeed * FinesseSpeedMult) // Drive forward with negative Y (forward)
+                                        .withVelocityY(
+                                                -MathUtil.applyDeadband(driverXbox.getLeftX(), 0.05)
+                                                        * MaxSpeed * FinesseSpeedMult) // Drive left with negative X (left)
+                                        .withRotationalRate(
+                                                -MathUtil.applyDeadband(driverXbox.getRightX(), 0.05)
+                                                        * MaxAngularRate * FinesseAngularRateMult) // Drive counterclockwise with negative X (left)
+                        ).andThen(trackBlueHub));
+       
+
         driverXbox.y().onTrue((drivetrain.runOnce(() -> drivetrain.seedFieldCentric())));
         driverXbox.x().whileTrue(drivetrain.applyRequest(() -> brake));
         driverXbox.b().onTrue(drivetrain.runOnce(() -> drivetrain.addFakeVisionReading()));
 
-        driverXbox.povUp()
-                .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0.5).withVelocityY(0)));
-        driverXbox.povDown()
-                .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(-0.5).withVelocityY(0)));
-        driverXbox.povRight()
-                .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0).withVelocityY(-0.5)));
-        driverXbox.povLeft()
-                .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0).withVelocityY(0.5)));
+        if(driverXbox.rightBumper().getAsBoolean()){
+                driverXbox.povUp()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0.5 * FinesseSpeedMult).withVelocityY(0)));
+                driverXbox.povDown()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(-0.5 * FinesseSpeedMult).withVelocityY(0)));
+                driverXbox.povRight()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0).withVelocityY(-0.5 * FinesseSpeedMult)));
+                driverXbox.povLeft()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0).withVelocityY(0.5 * FinesseSpeedMult)));
+        } else {
+                driverXbox.povUp()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0.5).withVelocityY(0)));
+                driverXbox.povDown()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(-0.5).withVelocityY(0)));
+                driverXbox.povRight()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0).withVelocityY(-0.5)));
+                driverXbox.povLeft()
+                        .whileTrue(drivetrain.applyRequest(() -> forwardStraight.withVelocityX(0).withVelocityY(0.5)));
+        }
+        
+
+        
 
         // Aux driver controls
         //auxXbox.y().whileTrue(m_conveyorSubsystem.RunConveyorMM());
