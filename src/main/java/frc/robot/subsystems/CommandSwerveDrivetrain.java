@@ -12,6 +12,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -44,6 +45,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   /** Swerve request to apply during robot-centric path following */
   private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds =
       new SwerveRequest.ApplyRobotSpeeds().withDriveRequestType(DriveRequestType.Velocity);
+
+  /* State for field-relative acceleration computation */
+  private ChassisSpeeds m_prevFieldSpeeds = new ChassisSpeeds();
+  private double m_prevTimestamp = -1;
+  private double m_fieldAccelX = 0; // m/s²
+  private double m_fieldAccelY = 0; // m/s²
 
   /**
    * Constructs a CTRE SwerveDrivetrain using the specified constants.
@@ -158,6 +165,35 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     return run(() -> this.setControl(requestSupplier.get()));
   }
 
+  /**
+   * Returns the robot's current velocity in field-relative coordinates.
+   *
+   * <p>{@code getState().Speeds} is robot-relative by default. This method rotates those speeds by
+   * the robot's current heading (from the Pigeon 2 via odometry) to produce field-relative vx/vy.
+   *
+   * @return ChassisSpeeds whose {@code vxMetersPerSecond} is the field-X (away from blue alliance
+   *     wall) velocity and {@code vyMetersPerSecond} is the field-Y (left when viewed from blue
+   *     alliance) velocity, both in m/s.
+   */
+  public ChassisSpeeds getFieldRelativeVelocity() {
+    return ChassisSpeeds.fromRobotRelativeSpeeds(
+        getState().Speeds, getState().Pose.getRotation());
+  }
+
+  /**
+   * Returns the robot's current linear acceleration in field-relative coordinates, in m/s².
+   *
+   * <p>Acceleration is estimated by numerically differentiating field-relative velocity between
+   * successive {@link #periodic()} calls. The result is only valid after the first two periodic
+   * cycles.
+   *
+   * @return double[] of length 2: {@code [ax, ay]} where {@code ax} is acceleration along the
+   *     field-X axis and {@code ay} is acceleration along the field-Y axis, in m/s².
+   */
+  public double[] getFieldRelativeAcceleration() {
+    return new double[] {m_fieldAccelX, m_fieldAccelY};
+  }
+
   @Override
   public void periodic() {
     /*
@@ -179,6 +215,22 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
               });
 
     }
+
+    // Compute field-relative acceleration by differentiating field-relative velocity.
+    ChassisSpeeds currentFieldSpeeds = getFieldRelativeVelocity();
+    double currentTimestamp = getState().Timestamp;
+    if (m_prevTimestamp >= 0) {
+      double dt = currentTimestamp - m_prevTimestamp;
+      if (dt > 0) {
+        m_fieldAccelX =
+            (currentFieldSpeeds.vxMetersPerSecond - m_prevFieldSpeeds.vxMetersPerSecond) / dt;
+        m_fieldAccelY =
+            (currentFieldSpeeds.vyMetersPerSecond - m_prevFieldSpeeds.vyMetersPerSecond) / dt;
+      }
+    }
+    m_prevFieldSpeeds = currentFieldSpeeds;
+    m_prevTimestamp = currentTimestamp;
+
     SmartDashboard.putNumber("Rotation, Robot", getState().Pose.getRotation().getDegrees());
   }
 
