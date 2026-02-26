@@ -1,5 +1,8 @@
 package frc.robot.Constants;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -32,7 +35,14 @@ public class Constants {
 
     // Turret
     public static final class TurretSubsystemConstants {
-
+    public static final ArrayList<Translation2d> blueHomePoses = new ArrayList<>(Arrays.asList(
+        new Translation2d(2, 3), // example field coords
+        new Translation2d(2, 5)  // example field coords
+    ));
+    public static final ArrayList<Translation2d> redHomePoses = new ArrayList<>(Arrays.asList(
+        new Translation2d(11, 3), // example field coords
+        new Translation2d(11, 5)  // example field coords
+    ));
     public static final Translation2d blueHubPose = new Translation2d(4.612, 4.021328); // example field coords
     public static final Translation2d blueHomePose = new Translation2d(2, 2); // example field coords
     public static final Translation2d redHubPose = new Translation2d(11.901424 ,4.021328); // example field coords

@@ -42,16 +42,30 @@ public class TrackFieldPoseCommand extends Command {
 
     @Override
     public void execute() {
-        Translation2d targetPosition = Constants.TurretSubsystemConstants.blueHubPose; // default target
-        Boolean isBlue = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue;
-        if (isBlue && robotPoseSupplier.get().getTranslation().getX() < Constants.TurretSubsystemConstants.blueLineZone) {
+        Translation2d robotTranslation = robotPoseSupplier.get().getTranslation();
+        boolean isBlue = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue;
+        Translation2d targetPosition;
+
+        if (isBlue && robotTranslation.getX() < Constants.TurretSubsystemConstants.blueLineZone) {
             targetPosition = Constants.TurretSubsystemConstants.blueHubPose;
-        } else if (!isBlue && robotPoseSupplier.get().getTranslation().getX() > Constants.TurretSubsystemConstants.redLineZone) {
+            SmartDashboard.putString("TrackFieldPoseCommand/Target", "Blue Hub");
+        } else if (!isBlue && robotTranslation.getX() > Constants.TurretSubsystemConstants.redLineZone) {
             targetPosition = Constants.TurretSubsystemConstants.redHubPose;
+            SmartDashboard.putString("TrackFieldPoseCommand/Target", "Red Hub");
         } else {
-            targetPosition = isBlue ? Constants.TurretSubsystemConstants.blueHomePose : Constants.TurretSubsystemConstants.redHomePose; // default to blue home if isBlue is true, otherwise red home
+            var homePoses = isBlue
+                    ? Constants.TurretSubsystemConstants.blueHomePoses
+                    : Constants.TurretSubsystemConstants.redHomePoses;
+            targetPosition = homePoses.stream()
+                    .min((a, b) -> Double.compare(a.getDistance(robotTranslation), b.getDistance(robotTranslation)))
+                    .orElse(isBlue ? Constants.TurretSubsystemConstants.blueHubPose : Constants.TurretSubsystemConstants.redHubPose);
+            SmartDashboard.putString("TrackFieldPoseCommand/Target", isBlue ? "Blue Home (Closest)" : "Red Home (Closest)");
+            SmartDashboard.putString(
+                "TrackFieldPoseCommand/Target",
+                (isBlue ? "Blue Home (Closest)" : "Red Home (Closest)")
+                    + String.format(" (x=%.2f, y=%.2f)", targetPosition.getX(), targetPosition.getY()));
         }
-        SmartDashboard.putString("TrackFieldPoseCommand/Target", isBlue ? "Blue Hub/Home" : "Red Hub/Home" + targetPosition.toString());
+        
         turret.aimFieldRelativeWithPrediction(
                 robotPoseSupplier.get(),
                 robotVelocitySupplier.get(),
