@@ -12,12 +12,13 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.Constants;
 
 public class TurretSubsystem extends SubsystemBase {
 
     /* ==================== Hardware IDs ==================== */
-    private static final int TURRET_MOTOR_ID = 10;
-    private static final int TURRET_CANCODER_ID = 11;
+    private static final int TURRET_MOTOR_ID = Constants.TurretSubsystemConstants.kTurretMotorId;
+    private static final int TURRET_CANCODER_ID = Constants.TurretSubsystemConstants.kTurretEncoderId;
 
     private static final int LIMIT_NEG_ID = 0; // -180 deg
     private static final int LIMIT_POS_ID = 1; // +180 deg

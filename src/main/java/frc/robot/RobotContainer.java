@@ -36,7 +36,8 @@ import frc.robot.subsystems.Vision;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.LauncherSubsystem;
 import frc.robot.commands.IntakeCommand;
-import frc.robot.commands.Shoot;
+import frc.robot.commands.Launch;
+import frc.robot.commands.LaunchLookup;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.Constants.Constants.TurretSubsystemConstants;
 import frc.robot.subsystems.ConveyorSubsystem;
@@ -84,8 +85,22 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
 
     // This command will track the robot's pose on the field using vision
     // measurements and drive the turret to point at the hub
-    private Command makeShoot() {
-        return new Shoot(m_conveyorSubsystem, m_launcherSubsystem, m_kickerSubsystem);
+    private Command makeLaunch() {
+        return new Launch(
+            m_conveyorSubsystem,
+            m_launcherSubsystem,
+            m_kickerSubsystem,
+            () -> drivetrain.getState().Pose,
+            this::getFieldRelativeVelocity);
+    }
+
+    private Command makeLaunchLookup() {
+        return new LaunchLookup(
+            m_conveyorSubsystem,
+            m_launcherSubsystem,
+            m_kickerSubsystem,
+            () -> drivetrain.getState().Pose,
+            this::getFieldRelativeVelocity);
     }
 
     private Command makeTrack() {
@@ -120,7 +135,7 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
         NamedCommands.registerCommand("ExtendHood", m_launcherSubsystem.ExtendHoodMM());
         NamedCommands.registerCommand("RetractHood", m_launcherSubsystem.RetractHoodMM());
         NamedCommands.registerCommand("MoveTurret", m_turretSubsystem.SetTurretPositionMM(null));
-        NamedCommands.registerCommand("Shoot", makeShoot());
+        NamedCommands.registerCommand("Launch", makeLaunch());
         NamedCommands.registerCommand("TrackHome", makeTrack());
 
 
@@ -166,7 +181,7 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
                                 .withRotationalRate(
                                         -MathUtil.applyDeadband(driverXbox.getRightX(), 0.05)
                                                 * MaxAngularRate) // Drive counterclockwise with negative X (left)
-                ).andThen(makeTrack()));
+                ));
 
         driverXbox.rightBumper().whileTrue(
                         // Drivetrain will execute this command periodically
@@ -181,7 +196,7 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
                                         .withRotationalRate(
                                                 -MathUtil.applyDeadband(driverXbox.getRightX(), 0.05)
                                                         * MaxAngularRate * FinesseAngularRateMult) // Drive counterclockwise with negative X (left)
-                        ).andThen(makeTrack()));
+                        ));
        
 
         driverXbox.y().onTrue((drivetrain.runOnce(() -> drivetrain.seedFieldCentric())));
@@ -221,7 +236,8 @@ private final TurretSubsystem m_turretSubsystem = new TurretSubsystem();
         //auxXbox.leftBumper().onTrue(m_launcherSubsystem.RetractHoodMM());
         auxXbox.a().onTrue(makeTrack());
 
-        auxXbox.axisMagnitudeGreaterThan(4, .2).whileTrue(makeShoot());
+        auxXbox.axisMagnitudeGreaterThan(4, .2).whileTrue(makeLaunch());
+        auxXbox.b().whileTrue(makeLaunchLookup());
         auxXbox.povUp().whileTrue(m_climberSubsystem.ExtendClimberMM(null));
         auxXbox.povDown().whileTrue(m_climberSubsystem.LowerClimberMM(null));
 

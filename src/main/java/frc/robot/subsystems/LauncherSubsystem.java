@@ -58,10 +58,7 @@ public class LauncherSubsystem extends SubsystemBase {
   private TalonFX launcherMotor = new TalonFX(LAUNCHER_MOTOR_ID);
   private TalonFX hoodMotor = new TalonFX(HOOD_MOTOR_ID);
 
-
-    private final DigitalInput negLimit = new DigitalInput(LIMIT_NEG_ID);
-    private final DigitalInput posLimit = new DigitalInput(LIMIT_POS_ID);
-    private final DigitalInput homeSwitch = new DigitalInput(HOME_SWITCH_ID);
+  private final DigitalInput homeSwitch = new DigitalInput(HOME_SWITCH_ID);
 
   private final CANcoder hoodEncoder = new CANcoder(LauncherSubsystemConstants.kHoodEncoderId);
   private final MotionMagicVelocityVoltage motionMagic = new MotionMagicVelocityVoltage(0);
@@ -117,7 +114,7 @@ private void configureHoodMotor() {
         config.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
         config.Feedback.RotorToSensorRatio = 1;
         config.Feedback.SensorToMechanismRatio = 144;
-        config.Feedback.FeedbackRotorOffset = 0.01;
+        //config.Feedback.FeedbackRotorOffset = 0.01;
 
   /* ---- Motion Magic ---- */
   config.MotionMagic.MotionMagicCruiseVelocity = MM_CRUISE_VEL_HOOD;
@@ -337,14 +334,6 @@ private void configureHoodMotor() {
         }
     }
 
-    public boolean isAtNegativeLimit() {
-        return !negLimit.get();
-    }
-
-    public boolean isAtPositiveLimit() {
-        return !posLimit.get();
-    }
-
     public boolean isHomePressed() {
         return !homeSwitch.get();
     }
@@ -365,8 +354,9 @@ private void configureHoodMotor() {
     // This method will be called once per scheduler run
     // Optional: auto-zero if home switch hit
         if (isHomePressed()) {
-            hoodMotor.setPosition((hoodEncoder.getAbsolutePosition().getValueAsDouble()
-            -Constants.LauncherSubsystemConstants.trueZero)*1/Constants.LauncherSubsystemConstants.hoodToEncoderRatio);
+            hoodMotor.setPosition(0.0);
+            // hoodMotor.setPosition((hoodEncoder.getAbsolutePosition().getValueAsDouble()
+            // -Constants.LauncherSubsystemConstants.trueZero)*1/Constants.LauncherSubsystemConstants.hoodToEncoderRatio);
         }
   }
 

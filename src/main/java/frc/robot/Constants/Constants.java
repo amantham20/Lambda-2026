@@ -56,10 +56,15 @@ public class Constants {
     public static final double goalHeightM = 72.0 * 0.0254; // 72 in -> m
     public static final double dz = goalHeightM - shooterHeightM;
 
+    // Height of the home/amp goal — measure on the actual robot/field.
+    public static final double homeGoalHeightM = 24.0 * 0.0254; // TODO: Measure actual home goal height (inches)
+    public static final double homeDz = homeGoalHeightM - shooterHeightM;
+
     //TODO: Measure this from shooter exit to robot center 
     public static final Translation2d shooterOffsetRobot = new Translation2d(0.32, 0.18);
 
         public static final int kTurretMotorId = 17;
+        public static final int kTurretEncoderId = 24;
         public static final Double ballSpeed = 22.0;
     }
 
@@ -70,7 +75,20 @@ public class Constants {
         public static final int kHoodEncoderId = 23;
         public static final double trueZero = -0.186523;
         public static final double hoodToEncoderRatio = 0.125;
-        
+        public static final double kShootSpinUpSeconds = 0.2; // seconds to wait for launcher to spin up before feeding
+
+        // Hood position limits (mechanism rotations) — must match soft limits in LauncherSubsystem
+        public static final double kHoodMinRot = 0.05;
+        public static final double kHoodMaxRot = 1.70;
+
+        // Physical angle corresponding to the min/max hood rotation positions.
+        // TODO: Measure both values on the actual robot.
+        public static final double kHoodMinAngleDeg = 20.0;
+        public static final double kHoodMaxAngleDeg = 70.0;
+
+        // Flywheel diameter used to convert ball exit speed (m/s) → launcher RPS.
+        // TODO: Measure actual flywheel diameter.
+        public static final double kLauncherWheelDiameterM = 0.1016; // 4 in default
     }
 
     // Climber
