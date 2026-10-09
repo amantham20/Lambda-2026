@@ -45,7 +45,7 @@ Java packages actually imported by `src/`: `edu.wpi.first.*`, `com.ctre.phoenix6
 
 | Host | Why | Confidence |
 |---|---|---|
-| `services.gradle.org` | Downloads the Gradle 8.11 wrapper distribution | repo |
+| `services.gradle.org` | Gradle 8.11 wrapper distribution; it redirects to a GitHub release asset (`github.com` -> `release-assets.githubusercontent.com`), so those must be allowed too | repo + verify |
 | `plugins.gradle.org` | Resolves the `edu.wpi.first.GradleRIO` plugin | repo (`gradlePluginPortal()`) |
 | `frcmaven.wpi.edu` | WPILib libraries, native/JNI libs, AdvantageKit mirror | repo + vendor docs |
 | `maven.ctr-electronics.com` | CTRE Phoenix 6 | repo |
@@ -53,7 +53,7 @@ Java packages actually imported by `src/`: `edu.wpi.first.*`, `com.ctre.phoenix6
 | `maven.photonvision.org` | PhotonLib | repo |
 | `repo.maven.apache.org` (Maven Central) | JUnit 5 and transitive libraries (Jackson, EJML, etc. used by WPILib) | verify |
 | `repo1.maven.org` | Maven Central alias some tools redirect to | verify |
-| `github.com`, `objects.githubusercontent.com`, `raw.githubusercontent.com`, `api.github.com` | Source hosting, vendordep "latest" JSON URLs (AdvantageKit), WPILib installer and tool releases, GitHub Actions | repo + verify |
+| `github.com`, `objects.githubusercontent.com`, `release-assets.githubusercontent.com`, `raw.githubusercontent.com`, `api.github.com` | Source hosting, vendordep "latest" JSON URLs (AdvantageKit), WPILib installer and tool releases, GitHub Actions | repo + verify |
 
 Vendordep update URLs (only needed when updating libraries in VS Code):
 - `https://github.com/Mechanical-Advantage/AdvantageKit/releases/latest/download/AdvantageKit.json`
@@ -131,17 +131,24 @@ OpenAI's published guidance (help article 9247338) names:
 | `*.oaiusercontent.com` (e.g. `files.oaiusercontent.com`) | File uploads/downloads |
 | UDP 3478 + OpenAI-published IP ranges | ChatGPT Voice only (optional) |
 
-Commonly also needed [verify, not in the article I could read]: `openai.com`,
-`chat.openai.com` (legacy redirect), `cdn.oaistatic.com` / `*.oaistatic.com` (static assets),
-`api.openai.com` (API / SDK users), `registry.npmjs.org` and `github.com` (Codex CLI install).
+Also needed per an automated review of this doc quoting OpenAI's article (I could not
+fetch the article myself, so **confirm against the live page before sending**):
+`*.openai.com`, `*.oaistatic.com`, `challenges.cloudflare.com`, `cdn.workos.com`,
+`setup.workos.com`. Treat the table above as a subset and copy the article's full list.
+
+Other commonly needed [verify]: `api.openai.com` (API / SDK users),
+`registry.npmjs.org` and `github.com` (Codex CLI install).
 Ask IT to run the browser dev tools Network tab on first load to confirm.
 
 ---
 
 ## 4. How to confirm the list empirically
 
-1. On an unrestricted network: `./gradlew build --refresh-dependencies` through a logging
-   proxy (mitmproxy/Squid) with `HTTPS_PROXY` set, and sort unique hosts.
+1. On an unrestricted network, run the build through a logging proxy (mitmproxy/Squid).
+   Gradle is a JVM app and ignores `HTTPS_PROXY`, so pass JVM proxy properties, e.g.
+   `GRADLE_OPTS="-Dhttp.proxyHost=HOST -Dhttp.proxyPort=PORT -Dhttps.proxyHost=HOST -Dhttps.proxyPort=PORT" ./gradlew build --refresh-dependencies`
+   (the proxy's CA must be trusted by the JVM), then sort unique hosts. See Gradle's
+   [proxy docs](https://docs.gradle.org/current/userguide/networking.html#sec:accessing_the_web_via_a_proxy).
 2. For Claude Code: `claude --debug`, plus `/status` to view proxy state.
 3. For ChatGPT: browser DevTools -> Network -> "Domain" column.
 4. Alternative if allowlisting is hard: build once on an open network and copy `~/.gradle`
